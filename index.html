@@ -88,23 +88,45 @@
 
     <!-- Main JavaScript -->
     <script type="module">
+        console.log("Script started loading."); // DEBUG: Confirm script starts
+
         // Firebase SDKs imports
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // --- Global Variables (Provided by the Canvas environment) ---
-        // Firebase configuration object
-        const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
-        // Unique application ID for Firestore paths
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-paste-app';
-        // Initial authentication token (if provided, for seamless sign-in)
-        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+        console.log("Firebase SDKs imported."); // DEBUG: Confirm imports
+
+        // --- Firebase Configuration (YOUR ACTUAL CONFIG) ---
+        // This configuration is specific to your Firebase project.
+        const firebaseConfig = {
+            apiKey: "AIzaSyBnM5_Jx1FAJZ-HYP77DJoxZ_fGTmvNPCs",
+            authDomain: "shady-s-paste-services.firebaseapp.com",
+            projectId: "shady-s-paste-services",
+            storageBucket: "shady-s-paste-services.firebasestorage.app",
+            messagingSenderId: "572167704776",
+            appId: "1:572167704776:web:15137b715419f07dbc55fd"
+            // measurementId: "G-HEEF5LE7NG" // Not used for core functionality, can be omitted
+        };
+
+        // --- Application ID (Derived from your Firebase config's appId) ---
+        // This is used for constructing Firestore paths (e.g., artifacts/{appId}/public/data/pastes)
+        const appId = firebaseConfig.appId;
+
+        // --- Initial authentication token (Not typically used for GitHub Pages, can be null) ---
+        // This is mainly for specific Canvas environment setups.
+        const initialAuthToken = null;
+
+        console.log("Firebase config and global variables defined."); // DEBUG: Confirm global vars
+        console.log("Firebase Config:", firebaseConfig); // DEBUG: Log the actual config being used
+        console.log("App ID:", appId); // DEBUG: Log the appId being used
 
         // --- Firebase Initialization ---
         const app = initializeApp(firebaseConfig); // Initialize Firebase app
         const db = getFirestore(app);             // Get Firestore instance
         const auth = getAuth(app);               // Get Auth instance
+
+        console.log("Firebase initialized."); // DEBUG: Confirm Firebase init
 
         let userId = null; // Stores the current user's ID, updated on auth state change
 
@@ -119,6 +141,20 @@
         const createNewPasteBtn = document.getElementById('createNewPasteBtn');
         const messageBox = document.getElementById('messageBox');
         const messageText = document.getElementById('messageText');
+
+        // DEBUG: Check if DOM elements are found
+        console.log("DOM elements references:", {
+            pasteContentInput: !!pasteContentInput,
+            savePasteBtn: !!savePasteBtn,
+            viewPasteSection: !!viewPasteSection,
+            createPasteSection: !!createPasteSection,
+            displayPasteContent: !!displayPasteContent,
+            pasteLinkInput: !!pasteLinkInput,
+            copyLinkBtn: !!copyLinkBtn,
+            createNewPasteBtn: !!createNewPasteBtn,
+            messageBox: !!messageBox,
+            messageText: !!messageText
+        });
 
         // --- Utility Functions ---
 
@@ -174,6 +210,18 @@
          * @returns {Promise<boolean>} True if save was successful, false otherwise.
          */
         async function savePaste(id, content) {
+            console.log("Attempting to save paste to Firestore..."); // DEBUG: Before save
+            if (!db) {
+                console.error("Firestore DB not initialized!"); // DEBUG: Check if db is null/undefined
+                showMessage('Firebase is not initialized. Please check console for errors.', 'error');
+                return false;
+            }
+            if (!userId) {
+                console.error("User ID is not set. Authentication might have failed."); // DEBUG: Check userId
+                showMessage('Authentication failed. Cannot save paste.', 'error');
+                return false;
+            }
+
             try {
                 // Construct the Firestore document reference path for public data
                 // Path: artifacts/{appId}/public/data/pastes/{pasteId}
@@ -184,9 +232,10 @@
                     userId: userId // Store the ID of the user who created it (can be anonymous)
                 });
                 showMessage('Paste saved successfully!', 'success');
+                console.log("Paste saved successfully to Firestore."); // DEBUG: After successful save
                 return true;
             } catch (error) {
-                console.error("Error saving paste:", error);
+                console.error("Error saving paste:", error); // DEBUG: Log full error
                 showMessage('Error saving paste. Please try again.', 'error');
                 return false;
             }
@@ -198,6 +247,12 @@
          * @returns {Promise<string|null>} The paste content string if found, otherwise null.
          */
         async function getPaste(id) {
+            console.log("Attempting to get paste from Firestore with ID:", id); // DEBUG: Before get
+            if (!db) {
+                console.error("Firestore DB not initialized!"); // DEBUG: Check if db is null/undefined
+                showMessage('Firebase is not initialized. Please check console for errors.', 'error');
+                return null;
+            }
             try {
                 // Construct the Firestore document reference path
                 const pasteRef = doc(db, `artifacts/${appId}/public/data/pastes`, id);
@@ -205,13 +260,14 @@
 
                 if (docSnap.exists()) {
                     // If document exists, return its 'content' field
+                    console.log("Paste found:", docSnap.data().content); // DEBUG: Paste found
                     return docSnap.data().content;
                 } else {
                     console.log("No such paste document found with ID:", id);
                     return null; // Document does not exist
                 }
             } catch (error) {
-                console.error("Error getting paste:", error);
+                console.error("Error getting paste:", error); // DEBUG: Log full error
                 showMessage('Error retrieving paste. It might not exist or there was a network issue.', 'error');
                 return null;
             }
@@ -229,18 +285,22 @@
 
             if (!content) {
                 showMessage('Please enter some text to paste.', 'info');
+                console.log("Paste content is empty."); // DEBUG: Empty content
                 return; // Stop if content is empty
             }
 
             hideMessage(); // Hide any previous messages
             savePasteBtn.textContent = 'Saving...'; // Update button text
             savePasteBtn.disabled = true; // Disable button to prevent multiple clicks
+            console.log("Button state updated to 'Saving...'"); // DEBUG: Button state
 
             const pasteId = generateUniqueId(); // Generate a unique ID for the new paste
+            console.log("Generated paste ID:", pasteId); // DEBUG: Generated ID
             const success = await savePaste(pasteId, content); // Attempt to save
 
             savePasteBtn.textContent = 'Generate Shareable Link'; // Restore button text
             savePasteBtn.disabled = false; // Re-enable button
+            console.log("Button state restored."); // DEBUG: Button state restored
 
             if (success) {
                 // Construct the shareable URL using the current origin and the paste ID as a hash
@@ -252,6 +312,9 @@
                 createPasteSection.classList.add('hidden');
                 viewPasteSection.classList.remove('hidden');
                 showMessage('Your paste has been saved! Share the link below.', 'success');
+                console.log("UI updated and success message shown."); // DEBUG: UI update
+            } else {
+                console.log("Paste save failed."); // DEBUG: Save failed
             }
         });
 
@@ -260,10 +323,12 @@
          * Uses document.execCommand('copy') for broader compatibility in iframe environments.
          */
         copyLinkBtn.addEventListener('click', () => {
+            console.log("Copy Link button clicked!"); // DEBUG: Copy button click
             try {
                 pasteLinkInput.select(); // Select the text in the input field
                 document.execCommand('copy'); // Execute the copy command
                 showMessage('Link copied to clipboard!', 'success');
+                console.log("Link copied successfully."); // DEBUG: Link copied
             } catch (err) {
                 console.error('Failed to copy text:', err);
                 showMessage('Failed to copy link. Please copy it manually.', 'error');
@@ -275,6 +340,7 @@
          * Resets the UI to the paste creation form.
          */
         createNewPasteBtn.addEventListener('click', () => {
+            console.log("Create New Paste button clicked!"); // DEBUG: New paste button click
             // Clear input fields and displayed content
             pasteContentInput.value = '';
             pasteLinkInput.value = '';
@@ -284,6 +350,7 @@
             // Switch UI sections back to creation mode
             viewPasteSection.classList.add('hidden');
             createPasteSection.classList.remove('hidden');
+            console.log("UI reset for new paste creation."); // DEBUG: UI reset
         });
 
         /**
@@ -291,8 +358,10 @@
          * Loads and displays the corresponding paste if a hash is present.
          */
         async function handleUrlHash() {
+            console.log("handleUrlHash called."); // DEBUG: handleUrlHash entry
             // Get the hash part of the URL, removing the leading '#'
             const hash = window.location.hash.substring(1);
+            console.log("URL hash:", hash); // DEBUG: Current hash
 
             if (hash) {
                 // If a hash exists, attempt to load the paste
@@ -307,17 +376,20 @@
                     createPasteSection.classList.add('hidden');
                     viewPasteSection.classList.remove('hidden');
                     showMessage('Paste loaded successfully!', 'success');
+                    console.log("Paste loaded from hash successfully."); // DEBUG: Hash load success
                 } else {
                     // If paste not found, show error and revert to creation section
                     showMessage('Paste not found or invalid link. Please create a new one.', 'error');
                     createPasteSection.classList.remove('hidden');
                     viewPasteSection.classList.add('hidden');
+                    console.log("Paste not found for hash."); // DEBUG: Hash load fail
                 }
             } else {
                 // No hash, ensure the create paste section is visible
                 createPasteSection.classList.remove('hidden');
                 viewPasteSection.classList.add('hidden');
                 hideMessage(); // Ensure no lingering messages if user navigates to root
+                console.log("No hash, showing create paste section."); // DEBUG: No hash
             }
         }
 
@@ -328,6 +400,7 @@
          * This ensures Firestore operations only happen after a user (even anonymous) is authenticated.
          */
         onAuthStateChanged(auth, async (user) => {
+            console.log("onAuthStateChanged triggered."); // DEBUG: Auth state change
             if (user) {
                 // User is signed in.
                 userId = user.uid; // Store the authenticated user's ID
@@ -337,13 +410,16 @@
             } else {
                 // User is signed out or not yet authenticated.
                 // Attempt to sign in anonymously or with a custom token if available.
+                console.log("User not authenticated, attempting sign-in."); // DEBUG: Not authenticated
                 try {
                     if (initialAuthToken) {
                         // Use custom token if provided (e.g., from a secure environment)
                         await signInWithCustomToken(auth, initialAuthToken);
+                        console.log("Signed in with custom token."); // DEBUG: Custom token
                     } else {
                         // Otherwise, sign in anonymously
                         await signInAnonymously(auth);
+                        console.log("Signed in anonymously."); // DEBUG: Anonymous sign-in");
                     }
                 } catch (error) {
                     console.error("Error signing in:", error);
@@ -356,9 +432,7 @@
 
         // Listen for changes in the URL hash (e.g., when user navigates back/forward or manually changes hash)
         window.addEventListener('hashchange', handleUrlHash);
-
-        // The initial call to handleUrlHash is now managed within onAuthStateChanged
-        // to ensure Firebase authentication is ready before attempting to fetch data.
+        console.log("Event listeners attached."); // DEBUG: Event listeners
     </script>
 </body>
 </html>
