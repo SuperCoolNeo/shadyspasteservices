@@ -224,6 +224,7 @@
          * Validates input, saves to Firestore, and updates UI.
          */
         savePasteBtn.addEventListener('click', async () => {
+            console.log("Generate Shareable Link button clicked!"); // DEBUG: Confirm button click
             const content = pasteContentInput.value.trim(); // Get and trim content
 
             if (!content) {
@@ -330,7 +331,7 @@
             if (user) {
                 // User is signed in.
                 userId = user.uid; // Store the authenticated user's ID
-                console.log("Authenticated with Firebase. User ID:", userId);
+                console.log("Authenticated with Firebase. User ID:", userId); // DEBUG: Confirm auth status
                 // After successful authentication, handle any URL hash to load content
                 handleUrlHash();
             } else {
