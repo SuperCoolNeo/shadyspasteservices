@@ -1,0 +1,36 @@
+/* Custom Styles for Simple Paste Service */
+
+/* Body and Font Styling */
+body {
+    font-family: 'Inter', sans-serif; /* Apply Inter font from Google Fonts */
+    background-color: #f3f4f6; /* Light gray background for the entire page */
+}
+
+/* Container width (max-width handled by Tailwind's mx-auto and w-full) */
+.container {
+    max-width: 800px; /* Ensures the main content area doesn't get too wide on large screens */
+}
+
+/* Textarea Specific Styles */
+textarea {
+    resize: vertical; /* Allow users to resize the textarea vertically */
+}
+
+/* Custom Scrollbar for Textarea (Webkit browsers like Chrome, Safari) */
+textarea::-webkit-scrollbar {
+    width: 8px; /* Width of the scrollbar */
+}
+
+textarea::-webkit-scrollbar-track {
+    background: #f1f1f1; /* Background of the scrollbar track */
+    border-radius: 10px; /* Rounded corners for the track */
+}
+
+textarea::-webkit-scrollbar-thumb {
+    background: #888; /* Color of the scrollbar thumb */
+    border-radius: 10px; /* Rounded corners for the thumb */
+}
+
+textarea::-webkit-scrollbar-thumb:hover {
+    background: #555; /* Darker color when hovering over the thumb */
+}
